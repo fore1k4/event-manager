@@ -1,7 +1,10 @@
 package com.example.event_manager.Users;
 
 import com.example.event_manager.Locations.LocationDto;
+import com.example.event_manager.Security.jwt.JwtAuthenticationService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,60 +15,44 @@ import java.util.List;
 @RestController
 @RequestMapping("/users")
 public class UserController {
-    private final UserService userService;
-    private final UserConverterDto userConverterDto;
 
-    public UserController(UserService userService, UserConverterDto userConverterDto) {
+    private static Logger logger = LoggerFactory.getLogger(UserController.class);
+
+    private final UserService userService;
+
+    private final JwtAuthenticationService jwtAuthenticationService;
+
+    public UserController(
+            UserService userService,
+            JwtAuthenticationService jwtAuthenticationService
+    ) {
         this.userService = userService;
-        this.userConverterDto = userConverterDto;
+        this.jwtAuthenticationService = jwtAuthenticationService;
     }
 
     @PostMapping
     public ResponseEntity<UserDto> createUser(
-            @RequestBody UserDto user
+            @RequestBody @Valid SignUpRequest signUpRequest
+    )
+    {
+        logger.info("Creating user");
+        var createdUser = userService.registerUser(signUpRequest);
+
+        return ResponseEntity.status(HttpStatus.OK).
+                body(new UserDto(
+                        createdUser.id(),
+                        createdUser.login()
+                ));
+    }
+
+    @PostMapping("/auth")
+    public ResponseEntity<JwtTokenResponse> authenticateUser(
+            @RequestBody @Valid SignInRequest signInRequest
     ) {
-       var createdUser = userService.createUser(userConverterDto.toDomain(user));
-       return ResponseEntity.status(HttpStatus.CREATED)
-               .body(userConverterDto.toDto(createdUser));
-    }
+        logger.info("Authenticating user");
+         var token = jwtAuthenticationService.authenticate(signInRequest);
 
-    @GetMapping
-    public ResponseEntity<List<UserDto>> getAllUsers() {
-        var users = userService.getAllUsers().stream()
-                .map(userConverterDto::toDto)
-                .toList();
-
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(users);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<UserDto> updateLocation(
-            @PathVariable("id") Integer id,
-            @RequestBody UserDto userToUpdate
-    ) {
-        var updatedUser =
-                userService.updateUser(id,userConverterDto.toDomain(userToUpdate));
-
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(userConverterDto.toDto(updatedUser));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteLocation(
-            @PathVariable("id") Integer id
-    ) {
-        userService.deleteUser(id);
-        return ResponseEntity.status(HttpStatus.OK)
-                .build();
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<UserDto> getLocationById(
-            @PathVariable("id") Integer id
-    ){
-        var user = userService.getUserById(id);
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(userConverterDto.toDto(user));
+         return ResponseEntity.status(HttpStatus.OK)
+                 .body(new JwtTokenResponse(token));
     }
 }

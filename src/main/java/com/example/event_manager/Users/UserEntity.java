@@ -7,26 +7,29 @@ import jakarta.persistence.*;
 public class UserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
+
     private String login;
-    private Integer age;
+
+    private String password;
+
     private String role;
 
     public UserEntity() {
     }
 
-    public UserEntity(Integer id, String login, Integer age, String role) {
+    public UserEntity(Long id, String login, String password, String role) {
         this.id = id;
         this.login = login;
-        this.age = age;
+        this.password = password;
         this.role = role;
     }
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -38,12 +41,12 @@ public class UserEntity {
         this.login = login;
     }
 
-    public Integer getAge() {
-        return age;
+    public String getPassword() {
+        return password;
     }
 
-    public void setAge(Integer age) {
-        this.age = age;
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getRole() {

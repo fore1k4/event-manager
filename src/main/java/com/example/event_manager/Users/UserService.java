@@ -2,82 +2,61 @@ package com.example.event_manager.Users;
 
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 @Service
 public class UserService {
+    private static Logger log = LoggerFactory.getLogger(UserService.class);
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    private final UserConverterEntity userConverterEntity;
-
-    public UserService(UserRepository userRepository, UserConverterEntity userConverterEntity) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
-        this.userConverterEntity = userConverterEntity;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public User createUser(
-            User user
+
+    public User registerUser(
+            SignUpRequest signUpRequest
     ) {
-        if(userRepository.existsByLogin(user.login())) {
-            throw new EntityExistsException("user with login = %s, already exists"
-                    .formatted(user.login()));
-        }
-        var createdUser = userRepository.save(userConverterEntity.toEntity(user));
-
-        return userConverterEntity.toDomain(createdUser);
-    }
-
-    public List<User> getAllUsers() {
-      return  userRepository.findAll().stream()
-              .map(userConverterEntity::toDomain)
-              .toList();
-    }
-
-    public User getUserById(
-            Integer id
-    ) {
-        if (!userRepository.existsById(id)) {
-            throw new EntityNotFoundException("user with id = %s, not found"
-                    .formatted(id));
-        }
-        return userConverterEntity.toDomain(userRepository.findById(id).orElseThrow());
-    }
-    public void deleteUser(
-            Integer id
-    ) {
-        if (!userRepository.existsById(id)) {
-            throw new EntityNotFoundException("user with id = %s, not found"
-                    .formatted(id));
-        }
-        var userToDelete = userRepository.findById(id).orElseThrow();
-        userRepository.delete(userToDelete);
-    }
-
-    public User updateUser(
-            Integer id,
-            User userToUpdate
-    ) {
-        if (!userRepository.existsById(id)) {
-            throw new EntityNotFoundException("user with id = %s, not found"
-                    .formatted(id));
+        log.info("Registering user");
+        if (userRepository.existsByLogin(signUpRequest.login())) {
+            throw new EntityExistsException("User already exists");
         }
 
-        if(userRepository.existsByLogin(userToUpdate.login())) {
-            throw new EntityExistsException("user with login = %s, already exists"
-                    .formatted(userToUpdate.login()));
-        }
+        var hashedPass = passwordEncoder.encode(signUpRequest.password());
 
-        var updatedUser = new UserEntity(
-                userToUpdate.id(),
-                userToUpdate.login(),
-                userToUpdate.age(),
-                userToUpdate.role()
+        var user = new UserEntity(
+                null,
+                signUpRequest.login(),
+                hashedPass,
+                UserRole.USER.toString()
         );
-        updatedUser.setId(id);
 
-        userRepository.save(updatedUser);
+        userRepository.save(user);
 
-        return userConverterEntity.toDomain(updatedUser);
+        return new User(
+                user.getId(),
+                user.getLogin(),
+                user.getPassword(),
+                UserRole.valueOf(user.getRole())
+        );
+    }
+
+    public User findByLogin(String login) {
+        log.info("Finding user by login");
+        var userEntity = userRepository.findByLogin(login)
+                .orElseThrow(() -> new EntityNotFoundException("user not found"));
+        return new User(
+                userEntity.getId(),
+                userEntity.getLogin(),
+                userEntity.getPassword(),
+                UserRole.valueOf(userEntity.getRole())
+        );
     }
 }

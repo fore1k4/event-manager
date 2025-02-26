@@ -1,11 +1,10 @@
 package com.example.event_manager.Users;
 
 public record User(
-        Integer id,
+        Long id,
         String login,
-        Integer age,
-        String role
-
+        String password,
+        UserRole role
 ) {
 
 }
