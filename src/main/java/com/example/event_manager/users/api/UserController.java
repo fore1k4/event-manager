@@ -54,7 +54,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     public ResponseEntity<UserDto> getUserInfo(
-            @RequestBody @PathVariable Long id
+            @RequestBody @PathVariable("id") Long id
     ) {
         logger.info("Controller getting user info");
 
