@@ -1,4 +1,4 @@
-package com.example.event_manager.locations;
+package com.example.event_manager.locations.domain;
 
 public record Location(
         Long id,

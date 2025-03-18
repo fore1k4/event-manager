@@ -1,5 +1,9 @@
-package com.example.event_manager.users;
+package com.example.event_manager.users.domain;
 
+import com.example.event_manager.users.UserRole;
+import com.example.event_manager.users.api.SignUpRequest;
+import com.example.event_manager.users.database.UserEntity;
+import com.example.event_manager.users.database.UserRepository;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -53,7 +57,7 @@ public class UserService {
         );
     }
 
-    public User getById(Long id) {
+    public User getById(java.lang.Long id) {
         var userEntity = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("user not found"));
 
@@ -64,4 +68,6 @@ public class UserService {
                 UserRole.valueOf(userEntity.getRole())
         );
     }
+
+
 }

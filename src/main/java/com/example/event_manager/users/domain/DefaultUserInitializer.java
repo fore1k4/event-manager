@@ -1,5 +1,7 @@
-package com.example.event_manager.users;
+package com.example.event_manager.users.domain;
 
+import com.example.event_manager.users.database.UserEntity;
+import com.example.event_manager.users.database.UserRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityExistsException;
 import org.springframework.beans.factory.annotation.Autowired;

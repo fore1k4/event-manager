@@ -1,13 +1,13 @@
-package com.example.event_manager.users;
+package com.example.event_manager.users.database;
 
 import jakarta.persistence.*;
 
-@Entity
+@jakarta.persistence.Entity
 @Table(name = "users")
 public class UserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private java.lang.Long id;
 
     private String login;
 
@@ -18,18 +18,18 @@ public class UserEntity {
     public UserEntity() {
     }
 
-    public UserEntity(Long id, String login, String password, String role) {
+    public UserEntity(java.lang.Long id, String login, String password, String role) {
         this.id = id;
         this.login = login;
         this.password = password;
         this.role = role;
     }
 
-    public Long getId() {
+    public java.lang.Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(java.lang.Long id) {
         this.id = id;
     }
 

@@ -1,4 +1,4 @@
-package com.example.event_manager.locations;
+package com.example.event_manager.locations.database;
 
 import jakarta.persistence.*;
 

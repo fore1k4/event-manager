@@ -1,6 +1,7 @@
-package com.example.event_manager.users;
+package com.example.event_manager.users.api;
 
-import com.example.event_manager.security.jwt.JwtAuthenticationService;
+import com.example.event_manager.security.jwt.AuthenticationService;
+import com.example.event_manager.users.domain.UserService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,14 +17,14 @@ public class UserController {
 
     private final UserService userService;
 
-    private final JwtAuthenticationService jwtAuthenticationService;
+    private final AuthenticationService authenticationService;
 
     public UserController(
             UserService userService,
-            JwtAuthenticationService jwtAuthenticationService
+            AuthenticationService authenticationService
     ) {
         this.userService = userService;
-        this.jwtAuthenticationService = jwtAuthenticationService;
+        this.authenticationService = authenticationService;
     }
 
     @PostMapping
@@ -45,7 +46,7 @@ public class UserController {
             @RequestBody @Valid SignInRequest signInRequest
     ) {
         logger.info("Controller Authenticating user");
-        var token = jwtAuthenticationService.authenticate(signInRequest);
+        var token = authenticationService.authenticate(signInRequest);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new JwtTokenResponse(token));
@@ -53,7 +54,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     public ResponseEntity<UserDto> getUserInfo(
-            @RequestBody Long id
+            @RequestBody @PathVariable("id") Long id
     ) {
         logger.info("Controller getting user info");
 
