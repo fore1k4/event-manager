@@ -1,5 +1,6 @@
-package com.example.event_manager.locations;
+package com.example.event_manager.locations.api;
 
+import com.example.event_manager.locations.domain.LocationService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

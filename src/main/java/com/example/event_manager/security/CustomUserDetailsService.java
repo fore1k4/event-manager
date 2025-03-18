@@ -1,6 +1,6 @@
 package com.example.event_manager.security;
 
-import com.example.event_manager.users.UserRepository;
+import com.example.event_manager.users.database.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

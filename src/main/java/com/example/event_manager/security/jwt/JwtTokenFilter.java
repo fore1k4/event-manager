@@ -1,7 +1,7 @@
 package com.example.event_manager.security.jwt;
 
-import com.example.event_manager.users.User;
-import com.example.event_manager.users.UserService;
+import com.example.event_manager.users.domain.User;
+import com.example.event_manager.users.domain.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

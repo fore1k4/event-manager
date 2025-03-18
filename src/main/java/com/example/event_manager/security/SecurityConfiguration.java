@@ -58,11 +58,18 @@ public class SecurityConfiguration {
                                 .requestMatchers(HttpMethod.GET, "/locations").hasAnyAuthority("ADMIN", "USER")
                                 .requestMatchers(HttpMethod.PUT, "/locations/**").hasAnyAuthority("ADMIN")
 
-                                .requestMatchers(HttpMethod.POST, "/events").hasAnyAuthority("ADMIN")
-                                .requestMatchers(HttpMethod.DELETE, "/events/**").hasAnyAuthority("ADMIN")
+                                .requestMatchers(HttpMethod.POST, "/events").hasAnyAuthority("USER")
+                                .requestMatchers(HttpMethod.DELETE, "/events/**").hasAnyAuthority("ADMIN", "USER")
                                 .requestMatchers(HttpMethod.GET, "/events/**").hasAnyAuthority("ADMIN", "USER")
                                 .requestMatchers(HttpMethod.GET, "/events").hasAnyAuthority("ADMIN", "USER")
-                                .requestMatchers(HttpMethod.PUT, "/events/**").hasAnyAuthority("ADMIN")
+                                .requestMatchers(HttpMethod.PUT, "/events/**").hasAnyAuthority("ADMIN", "USER")
+                                .requestMatchers(HttpMethod.PUT, "/events/my/**").hasAnyAuthority("ADMIN", "USER")
+                                .requestMatchers(HttpMethod.PUT, "/events/search").hasAnyAuthority("ADMIN", "USER")
+                                .requestMatchers(HttpMethod.PUT, "/events/cancel/**").hasAnyAuthority("USER")
+                                .requestMatchers(HttpMethod.PUT, "/registrations/my").hasAnyAuthority("USER")
+
+                                .requestMatchers(HttpMethod.PUT, "/registration/**").hasAnyAuthority("ADMIN", "USER")
+                                .requestMatchers(HttpMethod.PUT, "/registration/cancelling/**").hasAnyAuthority( "USER")
 
                                 .requestMatchers(HttpMethod.POST, "/users").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/users/auth").permitAll()

@@ -1,5 +1,6 @@
-package com.example.event_manager.locations;
+package com.example.event_manager.locations.api;
 
+import com.example.event_manager.locations.domain.Location;
 import org.springframework.stereotype.Component;
 
 @Component

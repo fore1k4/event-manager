@@ -1,5 +1,8 @@
-package com.example.event_manager.locations;
+package com.example.event_manager.locations.domain;
 
+import com.example.event_manager.locations.database.LocationsRepository;
+import com.example.event_manager.locations.database.LocationEntity;
+import com.example.event_manager.locations.database.LocationEntityConverter;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
