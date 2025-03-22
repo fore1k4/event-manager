@@ -5,6 +5,7 @@ import com.example.event_manager.events.api.EventRequestDto;
 import com.example.event_manager.events.api.EventRequestForUpdateDto;
 import com.example.event_manager.events.api.SearchFilter;
 import com.example.event_manager.events.database.*;
+import com.example.event_manager.locations.domain.LocationService;
 import com.example.event_manager.security.jwt.AuthenticationService;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
@@ -15,31 +16,41 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class EventService {
+
     private static Logger logger = LoggerFactory.getLogger(EventService.class);
+
     private final EventRepository eventRepository;
     private final AuthenticationService authenticationService;
+    private final LocationService locationService;
     @Autowired
     @Lazy
     private EventDomainMapper eventDomainMapper;
-    private final EventRegistrationRepository eventRegistrationRepository;
 
-    public EventService(EventRepository eventRepository, AuthenticationService authenticationService, EventRegistrationRepository eventRegistrationRepository, EventRegistrationMapper eventRegistrationMapper) {
+    public EventService(EventRepository eventRepository, AuthenticationService authenticationService, LocationService locationService) {
         this.eventRepository = eventRepository;
         this.authenticationService = authenticationService;
-        this.eventRegistrationRepository = eventRegistrationRepository;
+        this.locationService = locationService;
     }
 
     public Event createEvent(
             EventRequestDto eventRequestDto
     ) {
         logger.info("Creating new event");
+
         if (eventRepository.existsByName(eventRequestDto.name())) {
             logger.error("Event with name {} already exists", eventRequestDto.name());
             throw new EntityExistsException("Event with name " + eventRequestDto.name() + " already exists");
         }
+
+        var location = locationService.getLocationById(eventRequestDto.locationId());
+        if (location.capacity() < eventRequestDto.maxPlaces()) {
+            throw new IllegalArgumentException("Location with id " + eventRequestDto.locationId() + " smallest than " + eventRequestDto.maxPlaces() + " places");
+        }
+
         var currentUser = authenticationService.getCurrentAuthenticatedUser();
 
         if (eventRequestDto.maxPlaces() < eventRequestDto.occupiedPlaces()) {
@@ -56,7 +67,7 @@ public class EventService {
                 eventRequestDto.cost(),
                 eventRequestDto.duration(),
                 eventRequestDto.locationId(),
-                EventStatus.WAIT_START
+                EventStatus.WAIT_START.name()
         );
         eventRepository.save(createdEvent);
 
@@ -71,20 +82,6 @@ public class EventService {
                 .stream()
                 .map(eventDomainMapper::toDomainFromEntity)
                 .toList();
-    }
-
-    public List<Event> getEventsByUserId(
-            Long userId
-    ) {
-        var events = eventRepository.findEventsByOwnerId(userId).stream()
-                .map(it -> eventDomainMapper.toDomainFromEntity(it))
-                .toList();
-
-        for (int i = 0; i < events.size(); i++) {
-            System.out.println(events.get(i));
-        }
-
-        return events;
     }
 
     public void deleteEventById(
@@ -102,12 +99,17 @@ public class EventService {
             EventRequestForUpdateDto eventToUpdate
     ) {
         logger.info("Updating event with id {}", id);
+
         var currentUser = authenticationService.getCurrentAuthenticatedUser();
 
         var event = eventRepository.findById(id)
                 .orElseThrow(
                         () -> new EntityNotFoundException("Event with id " + id + " not found")
                 );
+
+        if (!Objects.equals(currentUser.id(), event.getOwnerId()))  {
+            throw new IllegalArgumentException("Current user is not the owner of the event");
+        }
 
         var updatedEvent = new EventEntity(
                 event.getId(),
@@ -120,7 +122,7 @@ public class EventService {
                 eventToUpdate.cost(),
                 eventToUpdate.duration(),
                 eventToUpdate.locationId(),
-                EventStatus.WAIT_START
+                EventStatus.WAIT_START.name()
         );
 
         eventRepository.save(updatedEvent);
@@ -178,31 +180,31 @@ public class EventService {
 
     public void updateStatus(
             Long eventId,
-            EventStatus newStatus
+            String newStatus
     ) {
         logger.info("Updating event status");
 
         eventRepository.updateEventStatus(eventId, newStatus);
     }
 
-    public void eventCancel(
+    public void cancelEvent(
             Long eventId
     ) {
         logger.info("Event cancelled");
 
-        eventRepository.updateEventStatus(eventId, EventStatus.CANCELLED);
+        eventRepository.updateEventStatus(eventId, EventStatus.CANCELLED.name());
     }
 
-    public List<Event> getUserRegisteredEvents() {
+    public List<Event> getCreatedUserEvent() {
+        logger.info("Retrieving all created user events");
+
         var currentUser = authenticationService.getCurrentAuthenticatedUser();
 
-        var eventsId = eventRegistrationRepository.findEventsByUserId(currentUser.id())
-                .orElseThrow(() -> new EntityNotFoundException("User with id " + currentUser.id() + " not found"));
-
-
-        return eventRepository.findAllByEventId(eventsId)
-                .stream().map(event -> eventDomainMapper.toDomainFromEntity(event))
+        return eventRepository.getCreatedUserEvents(currentUser.id()).stream()
+                .map(event -> eventDomainMapper.toDomainFromEntity(event))
                 .toList();
     }
+
+
 
 }

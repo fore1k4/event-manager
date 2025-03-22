@@ -42,7 +42,7 @@ public class EventEntity {
     private Long locationId;
 
     @Column(name = "status", nullable = false)
-    private EventStatus status;
+    private String status;
 
     public EventEntity() {
     }
@@ -58,7 +58,7 @@ public class EventEntity {
             Long cost,
             Long duration,
             Long locationId,
-            EventStatus status
+            String status
     ) {
         this.id = id;
         this.name = name;
@@ -145,11 +145,11 @@ public class EventEntity {
         this.locationId = locationId;
     }
 
-    public EventStatus getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(EventStatus status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 

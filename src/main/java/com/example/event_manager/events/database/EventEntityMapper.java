@@ -1,5 +1,6 @@
 package com.example.event_manager.events.database;
 
+import com.example.event_manager.events.EventStatus;
 import com.example.event_manager.events.domain.Event;
 import com.example.event_manager.events.domain.EventDomainMapper;
 import com.example.event_manager.events.domain.EventRegistration;
@@ -17,7 +18,6 @@ public class EventEntityMapper {
     @Autowired
     @Lazy
     private  EventDomainMapper eventDomainMapper;
-
 
 
     public Event toDomain (EventEntity event) {
@@ -39,7 +39,7 @@ public class EventEntityMapper {
                 event.getCost(),
                 event.getDuration(),
                 event.getLocationId(),
-                event.getStatus()
+                EventStatus.valueOf(event.getStatus())
         );
 
     }
@@ -65,7 +65,7 @@ public class EventEntityMapper {
                 event.cost(),
                 event.duration(),
                 event.locationId(),
-                event.status()
+                event.status().name()
         );
     }
 }
