@@ -1,8 +1,7 @@
 package com.example.event_manager.events.domain;
 
-import com.example.event_manager.events.api.EventDto;
+import com.example.event_manager.events.EventStatus;
 import com.example.event_manager.events.database.EventEntity;
-import com.example.event_manager.events.database.EventEntityMapper;
 import com.example.event_manager.events.database.EventRegistrationMapper;
 import org.springframework.stereotype.Component;
 
@@ -11,7 +10,7 @@ public class EventDomainMapper {
 
     private final EventRegistrationMapper eventRegistrationMapper;
 
-    public EventDomainMapper(EventEntityMapper eventEntityMapper, EventRegistrationMapper eventRegistrationMapper) {
+    public EventDomainMapper(EventRegistrationMapper eventRegistrationMapper) {
         this.eventRegistrationMapper = eventRegistrationMapper;
     }
 
@@ -33,7 +32,7 @@ public class EventDomainMapper {
                 createdEvent.getCost(),
                 createdEvent.getDuration(),
                 createdEvent.getLocationId(),
-                createdEvent.getStatus()
+                EventStatus.valueOf(createdEvent.getStatus())
         );
     }
 
@@ -45,17 +44,14 @@ public class EventDomainMapper {
                 event.maxPlaces(),
                 event.occupiedPlaces(),
                 event.registrationList().stream()
-                        .map(it -> eventRegistrationMapper.toEntity(it))
+                        .map(eventRegistrationMapper::toEntity)
                         .toList(),
                 event.date(),
                 event.cost(),
                 event.duration(),
                 event.locationId(),
-                event.status()
+                event.status().name()
         );
     }
 
-    public Event toDomainFromDto(EventDto event) {
-return null;
-    }
 }

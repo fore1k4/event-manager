@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 public class EventRegistrationService {
 
@@ -23,14 +25,16 @@ public class EventRegistrationService {
     private final EventEntityMapper eventEntityMapper;
     private final EventRepository eventRepository;
     private final AuthenticationService authenticationService;
+    private final EventDomainMapper eventDomainMapper;
 
 
-    public EventRegistrationService(EventRegistrationRepository eventRegistrationRepository, EventService eventService, EventEntityMapper eventEntityMapper, EventRepository eventRepository, AuthenticationService authenticationService) {
+    public EventRegistrationService(EventRegistrationRepository eventRegistrationRepository, EventService eventService, EventEntityMapper eventEntityMapper, EventRepository eventRepository, AuthenticationService authenticationService, EventDomainMapper eventDomainMapper) {
         this.eventRegistrationRepository = eventRegistrationRepository;
         this.eventService = eventService;
         this.eventEntityMapper = eventEntityMapper;
         this.eventRepository = eventRepository;
         this.authenticationService = authenticationService;
+        this.eventDomainMapper = eventDomainMapper;
     }
 
 
@@ -80,7 +84,7 @@ public class EventRegistrationService {
 
     }
 
-    public void eventRegistrationCancelling(
+    public void cancelRegistrationOnEvent(
             Long eventId
     ) {
         logger.info("Registration cancelling");
@@ -92,5 +96,17 @@ public class EventRegistrationService {
 
         eventRegistrationRepository.delete(eventRegistration);
         eventRepository.minusPersoneOnEventPlace(eventId);
+    }
+
+    public List<Event> getUserRegisteredEvents() {
+        var currentUser = authenticationService.getCurrentAuthenticatedUser();
+
+        var eventsId = eventRegistrationRepository.findEventsByUserId(currentUser.id())
+                .orElseThrow(() -> new EntityNotFoundException("User with id " + currentUser.id() + " not found"));
+
+
+        return eventRepository.findAllByEventId(eventsId)
+                .stream().map(eventDomainMapper::toDomainFromEntity)
+                .toList();
     }
 }

@@ -86,7 +86,7 @@ public interface EventRepository extends JpaRepository<EventEntity, Long> {
             """)
     void updateEventStatus(
             @Param("eventId") Long eventId,
-            @Param("newStatus") EventStatus newStatus
+            @Param("newStatus") String newStatus
     );
 
     @Query("""
@@ -95,6 +95,14 @@ public interface EventRepository extends JpaRepository<EventEntity, Long> {
             """)
     List<EventEntity> findAllByEventId(
             @Param("eventId") List<Long> eventId
+    );
+
+    @Query("""
+SELECT e FROM EventEntity e 
+WHERE e.ownerId = :ownerId
+""")
+    List<EventEntity> getCreatedUserEvents(
+         @Param("ownerId") Long ownerId
     );
 
 

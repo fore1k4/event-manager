@@ -43,10 +43,12 @@ public class EventController {
     @GetMapping
     public ResponseEntity<List<EventDto>> getAllEvents() {
         logger.info("Request for getting all events");
+
         var events = eventService.getAllEvents()
                 .stream()
                 .map(eventDtoMapper::toDto)
                 .toList();
+
         return ResponseEntity.status(HttpStatus.OK)
                 .body(events);
     }
@@ -56,7 +58,9 @@ public class EventController {
             @PathVariable("id") Long id
     ) {
         logger.info("Request for getting event with id {}", id);
+
         var event = eventService.getEventById(id);
+
         return ResponseEntity.status(HttpStatus.OK)
                 .body(eventDtoMapper.toDto(event));
     }
@@ -84,14 +88,12 @@ public class EventController {
                 .body(eventDtoMapper.toDto(updatedEvent));
     }
 
-    @GetMapping("/my/{userId}")
-    public ResponseEntity<List<EventDto>> getEventByUserId(
-            @PathVariable("userId") Long userId
-    ) {
-        logger.info("Request for getting events with userId {}", userId);
+    @GetMapping("/my")
+    public ResponseEntity<List<EventDto>> getEventByUserId() {
+        logger.info("Request for getting all created user events");
 
-        var events = eventService.getEventsByUserId(userId).stream()
-                .map(it -> eventDtoMapper.toDto(it))
+        var events = eventService.getCreatedUserEvent().stream()
+                .map(eventDtoMapper::toDto)
                 .toList();
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -119,23 +121,9 @@ public class EventController {
     ) {
         logger.info("Request for canceling event");
 
-        eventService.eventCancel(eventId);
+        eventService.cancelEvent(eventId);
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
-
-    @GetMapping("/registrations/my")
-    public ResponseEntity<List<EventDto>> getUserRegisteredEvents(
-    ) {
-        logger.info("Request for getting user registration events");
-
-        var events = eventService.getUserRegisteredEvents().stream()
-                .map(event -> eventDtoMapper.toDto(event))
-                .toList();
-
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(events);
-    }
-
 
 }
