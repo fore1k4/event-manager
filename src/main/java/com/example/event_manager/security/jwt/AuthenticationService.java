@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -36,5 +37,15 @@ public class AuthenticationService {
             throw new IllegalStateException("Authentication not present");
         }
         return (User) authentication.getPrincipal();
+    }
+
+    public String getCurrentUserJwtToken() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null) {
+            throw new IllegalStateException("Authentication not present");
+        }
+
+        return (String) authentication.getCredentials();
     }
 }

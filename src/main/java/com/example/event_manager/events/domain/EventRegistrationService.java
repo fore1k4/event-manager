@@ -11,6 +11,8 @@ import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,16 +23,14 @@ public class EventRegistrationService {
 
     private static Logger logger = LoggerFactory.getLogger(EventRegistrationService.class);
     private final EventRegistrationRepository eventRegistrationRepository;
-    private final EventService eventService;
     private final EventEntityMapper eventEntityMapper;
     private final EventRepository eventRepository;
     private final AuthenticationService authenticationService;
     private final EventDomainMapper eventDomainMapper;
 
 
-    public EventRegistrationService(EventRegistrationRepository eventRegistrationRepository, EventService eventService, EventEntityMapper eventEntityMapper, EventRepository eventRepository, AuthenticationService authenticationService, EventDomainMapper eventDomainMapper) {
+    public EventRegistrationService(EventRegistrationRepository eventRegistrationRepository, EventEntityMapper eventEntityMapper, EventRepository eventRepository, AuthenticationService authenticationService, EventDomainMapper eventDomainMapper) {
         this.eventRegistrationRepository = eventRegistrationRepository;
-        this.eventService = eventService;
         this.eventEntityMapper = eventEntityMapper;
         this.eventRepository = eventRepository;
         this.authenticationService = authenticationService;
@@ -45,7 +45,13 @@ public class EventRegistrationService {
     ) {
 
         logger.info("Registering event");
-        var event = eventService.getEventById(eventId);
+        logger.info("Dependency check - eventRepository: {}, eventDomainMapper: {}, eventRegistrationRepository: {}",
+                eventRepository != null,
+                eventDomainMapper != null,
+                eventRegistrationRepository != null);
+
+        var event = eventDomainMapper.toDomainFromEntity(eventRepository.findById(eventId)
+                .orElseThrow());
 
 
         if (eventRegistrationRepository.existsUserByEventId(user.id())) {
@@ -67,7 +73,7 @@ public class EventRegistrationService {
         }
 
 
-        if (eventService.getOccupiedPlaces(eventId) >= eventService.getPlaces(eventId)) {
+        if (eventRepository.getOccupiedPlaces(eventId) >= eventRepository.getMaxPlaces(eventId)) {
             throw new IllegalArgumentException("Event with id " + eventId + " mest nety");
         }
 
@@ -108,5 +114,16 @@ public class EventRegistrationService {
         return eventRepository.findAllByEventId(eventsId)
                 .stream().map(eventDomainMapper::toDomainFromEntity)
                 .toList();
+    }
+
+    public List<Long> getUsersIdFromEvent(
+            Long eventId
+    ) {
+       return eventRegistrationRepository.findUserIdsByEventId(eventId).orElseThrow(
+               () -> new EntityNotFoundException("Event with id " + eventId + " not found")
+       );
+
+
+
     }
 }

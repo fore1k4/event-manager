@@ -5,6 +5,10 @@ import com.example.event_manager.events.api.EventRequestDto;
 import com.example.event_manager.events.api.EventRequestForUpdateDto;
 import com.example.event_manager.events.api.SearchFilter;
 import com.example.event_manager.events.database.*;
+import com.example.event_manager.events.eventKafka.EventChangeMessage;
+import com.example.event_manager.events.eventKafka.EventFieldChange;
+import com.example.event_manager.events.eventKafka.EventFieldChangeUtil;
+import com.example.event_manager.events.eventKafka.EventKafkaSender;
 import com.example.event_manager.locations.domain.LocationService;
 import com.example.event_manager.security.jwt.AuthenticationService;
 import jakarta.persistence.EntityExistsException;
@@ -14,7 +18,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -26,14 +32,18 @@ public class EventService {
     private final EventRepository eventRepository;
     private final AuthenticationService authenticationService;
     private final LocationService locationService;
-    @Autowired
-    @Lazy
+    private final EventKafkaSender eventKafkaSender;
+    private final EventRegistrationService eventRegistrationService;
+
     private EventDomainMapper eventDomainMapper;
 
-    public EventService(EventRepository eventRepository, AuthenticationService authenticationService, LocationService locationService) {
+    public EventService(EventRepository eventRepository, AuthenticationService authenticationService, LocationService locationService, EventKafkaSender eventKafkaSender, EventRegistrationService eventRegistrationService, EventDomainMapper eventDomainMapper) {
         this.eventRepository = eventRepository;
         this.authenticationService = authenticationService;
         this.locationService = locationService;
+        this.eventKafkaSender = eventKafkaSender;
+        this.eventRegistrationService = eventRegistrationService;
+        this.eventDomainMapper = eventDomainMapper;
     }
 
     public Event createEvent(
@@ -71,8 +81,9 @@ public class EventService {
         );
         eventRepository.save(createdEvent);
 
-        return eventDomainMapper.toDomainFromEntity(createdEvent);
+        var savedEvent = eventDomainMapper.toDomainFromEntity(createdEvent);
 
+        return savedEvent;
     }
 
 
@@ -91,7 +102,31 @@ public class EventService {
         if (!eventRepository.existsById(id)) {
             throw new EntityNotFoundException("Event with id " + id + " not found");
         }
+
+        var event = getEventById(id);
+
         eventRepository.deleteById(id);
+
+        var currentUser = authenticationService.getCurrentAuthenticatedUser();
+        String token = authenticationService.getCurrentUserJwtToken();
+
+        eventKafkaSender.sendEvent(new EventChangeMessage(
+                id,
+                currentUser.id(),
+                event.ownerId(),
+                eventRegistrationService.getUsersIdFromEvent(event.id()),
+                token,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                EventFieldChangeUtil.of(
+                        EventStatus.valueOf(event.status().name()),
+                        EventStatus.valueOf(EventStatus.CANCELLED.name())
+                )
+        ));
     }
 
     public Event updateEvent(
@@ -101,34 +136,94 @@ public class EventService {
         logger.info("Updating event with id {}", id);
 
         var currentUser = authenticationService.getCurrentAuthenticatedUser();
+        String token = authenticationService.getCurrentUserJwtToken();
 
         var event = eventRepository.findById(id)
-                .orElseThrow(
-                        () -> new EntityNotFoundException("Event with id " + id + " not found")
-                );
+                .orElseThrow(() -> new EntityNotFoundException("Event with id " + id + " not found"));
 
-        if (!Objects.equals(currentUser.id(), event.getOwnerId()))  {
+        if (!Objects.equals(currentUser.id(), event.getOwnerId())) {
             throw new IllegalArgumentException("Current user is not the owner of the event");
         }
 
-        var updatedEvent = new EventEntity(
-                event.getId(),
-                eventToUpdate.name(),
+        // Сохраняем копии старых значений для сравнения
+        String oldName = event.getName();
+        Long oldMaxPlaces = event.getPlaces();
+        Long oldOccupiedPlaces = event.getOccupiedPlaces();
+        ZonedDateTime oldDate = event.getDate();
+        Long oldCost = event.getCost();
+        Long oldDuration = event.getDuration();
+        Long oldLocationId = event.getLocationId();
+        String oldStatus = event.getStatus();
+
+        // Обновляем поля у существующего объекта
+        event.setName(eventToUpdate.name());
+        event.setPlaces(eventToUpdate.maxPlaces());
+        event.setOccupiedPlaces(eventToUpdate.occupiedPlaces());
+        event.setDate(eventToUpdate.date());
+        event.setCost(eventToUpdate.cost());
+        event.setDuration(eventToUpdate.duration());
+        event.setLocationId(eventToUpdate.locationId());
+        event.setStatus(EventStatus.WAIT_START.name());
+
+        eventRepository.save(event);
+
+        var savedEvent = eventDomainMapper.toDomainFromEntity(event);
+
+        List<Long> userIds = eventRegistrationService.getUsersIdFromEvent(event.getId());
+
+        EventChangeMessage changeMessage = new EventChangeMessage(
+                id,
                 currentUser.id(),
-                eventToUpdate.maxPlaces(),
-                eventToUpdate.occupiedPlaces(),
-                event.getRegistrationList(),
-                eventToUpdate.date(),
-                eventToUpdate.cost(),
-                eventToUpdate.duration(),
-                eventToUpdate.locationId(),
-                EventStatus.WAIT_START.name()
+                event.getOwnerId(),
+                userIds,
+                token,
+                EventFieldChangeUtil.of(oldName, event.getName()),
+                EventFieldChangeUtil.of(oldMaxPlaces, event.getPlaces()),
+                EventFieldChangeUtil.of(oldDate, event.getDate()),
+                EventFieldChangeUtil.of(oldCost, event.getCost()),
+                EventFieldChangeUtil.of(oldDuration, event.getDuration()),
+                EventFieldChangeUtil.of(oldLocationId, event.getLocationId()),
+                EventFieldChangeUtil.of(
+                        EventStatus.valueOf(oldStatus),
+                        EventStatus.valueOf(event.getStatus())
+                )
         );
 
-        eventRepository.save(updatedEvent);
+        logger.info("\uD83D\uDD01 oldName: {}", oldName);
+        logger.info("\uD83C\uDD95 newName: {}", event.getName());
 
-        return eventDomainMapper.toDomainFromEntity(updatedEvent);
+        eventKafkaSender.sendEvent(changeMessage);
+
+        return savedEvent;
     }
+
+
+
+    public EventChangeMessage toEventChangeMessage(
+            Long eventId,
+            Event oldEvent,
+            EventRequestForUpdateDto newData,
+            Long changerId,
+            String token
+    ) {
+        return new EventChangeMessage(
+                eventId,
+                changerId,
+                oldEvent.ownerId(),
+                oldEvent.registrationList().stream()
+                        .map(eventRegistration -> eventRegistration.userId())
+                        .toList(),
+                token,
+                new EventFieldChange<>(oldEvent.name(), newData.name()),
+                new EventFieldChange<>(oldEvent.maxPlaces(), newData.maxPlaces()),
+                new EventFieldChange<>(oldEvent.date(), newData.date()),
+                new EventFieldChange<>(oldEvent.cost(), newData.cost()),
+                new EventFieldChange<>(oldEvent.duration(), newData.duration()),
+                new EventFieldChange<>(oldEvent.locationId(), newData.locationId()),
+                new EventFieldChange<>(oldEvent.status(), oldEvent.status())
+        );
+    }
+
 
     public Long getPlaces(
             Long eventId
@@ -142,7 +237,7 @@ public class EventService {
         return eventRepository.getOccupiedPlaces(eventId);
     }
 
-
+    @Transactional
     public Event getEventById(
             Long id
     ) {
@@ -178,21 +273,77 @@ public class EventService {
 
     }
 
-    public void updateStatus(
-            Long eventId,
-            String newStatus
-    ) {
-        logger.info("Updating event status");
+    public void updateStatus(Long eventId, String newStatus) {
+        logger.info("Updating event status for event {}", eventId);
 
+        // 1. Получаем событие
+        var event = getEventById(eventId);
+
+        // 2. Получаем данные аутентификации (с проверкой на null)
+        Long changerId = null;
+        String token = null;
+
+        try {
+            var currentUser = authenticationService.getCurrentAuthenticatedUser();
+            if (currentUser != null) {
+                changerId = currentUser.id();
+                token = authenticationService.getCurrentUserJwtToken();
+            }
+        } catch (IllegalStateException e) {
+            logger.warn("No authentication context available - system initiated change");
+        }
+
+
+        // 3. Обновляем статус в БД
         eventRepository.updateEventStatus(eventId, newStatus);
+
+        // 4. Отправляем событие в Kafka
+        eventKafkaSender.sendEvent(new EventChangeMessage(
+                eventId,
+                changerId,  // Теперь передаем реальный changerId или null
+                event.ownerId(),
+                eventRegistrationService.getUsersIdFromEvent(eventId),
+                token,      // Токен или null
+                null,       // name
+                null,       // maxPlaces
+                null,       // date
+                null,       // cost
+                null,       // duration
+                null,       // locationId
+                EventFieldChangeUtil.of(
+                        EventStatus.valueOf(event.status().name()),
+                        EventStatus.valueOf(newStatus)
+                )
+        ));
     }
 
     public void cancelEvent(
             Long eventId
     ) {
-        logger.info("Event cancelled");
+        logger.info("Event cancelling");
 
-        eventRepository.updateEventStatus(eventId, EventStatus.CANCELLED.name());
+        var currentUser = authenticationService.getCurrentAuthenticatedUser();
+        var event = getEventById(eventId);
+        var newStatus = EventStatus.CANCELLED.name();
+        eventRepository.updateEventStatus(eventId, newStatus);
+        String token = authenticationService.getCurrentUserJwtToken();
+        eventKafkaSender.sendEvent(new EventChangeMessage(
+                eventId,
+                currentUser.id(),
+                event.ownerId(),
+                eventRegistrationService.getUsersIdFromEvent(eventId),
+                token,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                EventFieldChangeUtil.of(
+                        EventStatus.valueOf(event.status().name()),
+                        EventStatus.valueOf(newStatus)
+                )
+        ));
     }
 
     public List<Event> getCreatedUserEvent() {
@@ -204,6 +355,10 @@ public class EventService {
                 .map(event -> eventDomainMapper.toDomainFromEntity(event))
                 .toList();
     }
+
+
+
+
 
 
 

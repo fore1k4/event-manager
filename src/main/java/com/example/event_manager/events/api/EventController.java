@@ -40,6 +40,8 @@ public class EventController {
                 .body(eventDtoMapper.toDto(createdEvent));
     }
 
+
+
     @GetMapping
     public ResponseEntity<List<EventDto>> getAllEvents() {
         logger.info("Request for getting all events");

@@ -28,26 +28,26 @@ public class EventStatusScheduler {
         var now = ZonedDateTime.now();
 
         eventList.forEach(event -> {
-
             var eventEndTime = event.date().plusMinutes(event.duration());
-
             System.out.println("Время окончания мероприятия: " + eventEndTime);
 
+            EventStatus newStatus;
+
             if (now.isBefore(event.date())) {
-
-                eventService.updateStatus(event.id(), EventStatus.WAIT_START.name());
-
+                newStatus = EventStatus.WAIT_START;
             } else if (now.isAfter(event.date()) && now.isBefore(eventEndTime)) {
+                newStatus = EventStatus.STARTED;
+            } else {
+                newStatus = EventStatus.FINISHED;
+            }
 
-                eventService.updateStatus(event.id(), EventStatus.STARTED.name());
-
-            } else if (now.isAfter(eventEndTime)) {
-
-                eventService.updateStatus(event.id(), EventStatus.FINISHED.name());
-
+            // 💡 Проверяем — если статус уже такой, нахуй чё-то делать
+            if (!event.status().equals(newStatus)) {
+                eventService.updateStatus(event.id(), newStatus.name());
             }
         });
     }
+
 
     //Метод для получения реального времени(для тестирования)
     @Scheduled(cron = "${event.stats.cron}")
