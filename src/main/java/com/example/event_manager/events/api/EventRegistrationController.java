@@ -2,41 +2,31 @@ package com.example.event_manager.events.api;
 
 import com.example.event_manager.events.domain.EventRegistrationService;
 import com.example.event_manager.security.jwt.AuthenticationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/registration")
+@RequiredArgsConstructor
 public class EventRegistrationController {
 
-    private static Logger logger = LoggerFactory.getLogger(EventRegistrationController.class);
     private final EventRegistrationService eventRegistrationService;
     private final AuthenticationService authenticationService;
     private final EventDtoMapper eventDtoMapper;
-
-    public EventRegistrationController(
-            EventRegistrationService eventRegistrationService,
-            AuthenticationService authenticationService,
-            EventDtoMapper eventDtoMapper
-    ) {
-        this.eventRegistrationService = eventRegistrationService;
-        this.authenticationService = authenticationService;
-        this.eventDtoMapper = eventDtoMapper;
-    }
 
     @PostMapping("/{eventId}")
     public ResponseEntity<Void> registerOnEvent(
            @PathVariable("eventId") Long eventId
     ) {
-     logger.info("Registering onEvent {}", eventId);
+     log.debug("Registering onEvent {}", eventId);
 
      var currentUser = authenticationService.getCurrentAuthenticatedUser();
-
      eventRegistrationService.registerOnEvent(currentUser, eventId);
 
      return ResponseEntity.ok().build();
@@ -46,7 +36,7 @@ public class EventRegistrationController {
     public ResponseEntity<Void> cancelRegistrationOnEvent(
           @PathVariable("id")  Long eventId
     ) {
-        logger.info("Request for canceling onEvent {}", eventId);
+        log.debug("Request for canceling onEvent {}", eventId);
 
         eventRegistrationService.cancelRegistrationOnEvent(eventId);
 
@@ -57,7 +47,7 @@ public class EventRegistrationController {
     @GetMapping("/registrations/my")
     public ResponseEntity<List<EventDto>> getUserRegisteredEvents(
     ) {
-        logger.info("Request for getting user registration events");
+        log.debug("Request for getting user registration events");
 
         var events = eventRegistrationService.getUserRegisteredEvents().stream()
                 .map(eventDtoMapper::toDto)

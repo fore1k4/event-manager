@@ -9,6 +9,8 @@ import com.example.event_manager.security.jwt.AuthenticationService;
 import com.example.event_manager.users.domain.User;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,24 +20,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class EventRegistrationService {
 
-    private static Logger logger = LoggerFactory.getLogger(EventRegistrationService.class);
     private final EventRegistrationRepository eventRegistrationRepository;
     private final EventEntityMapper eventEntityMapper;
     private final EventRepository eventRepository;
     private final AuthenticationService authenticationService;
     private final EventDomainMapper eventDomainMapper;
-
-
-    public EventRegistrationService(EventRegistrationRepository eventRegistrationRepository, EventEntityMapper eventEntityMapper, EventRepository eventRepository, AuthenticationService authenticationService, EventDomainMapper eventDomainMapper) {
-        this.eventRegistrationRepository = eventRegistrationRepository;
-        this.eventEntityMapper = eventEntityMapper;
-        this.eventRepository = eventRepository;
-        this.authenticationService = authenticationService;
-        this.eventDomainMapper = eventDomainMapper;
-    }
 
 
     @Transactional
@@ -44,8 +38,8 @@ public class EventRegistrationService {
             Long eventId
     ) {
 
-        logger.info("Registering event");
-        logger.info("Dependency check - eventRepository: {}, eventDomainMapper: {}, eventRegistrationRepository: {}",
+        log.info("Registering event");
+        log.info("Dependency check - eventRepository: {}, eventDomainMapper: {}, eventRegistrationRepository: {}",
                 eventRepository != null,
                 eventDomainMapper != null,
                 eventRegistrationRepository != null);
@@ -55,27 +49,28 @@ public class EventRegistrationService {
 
 
         if (eventRegistrationRepository.existsUserByEventId(user.id())) {
-            logger.error("User already registered");
+            log.error("User already registered");
             throw new EntityExistsException("User with id " + user.id() + " already registered");
         }
 
 
         if (!event.status().equals(EventStatus.WAIT_START)) {
-            logger.error("Event is not waiting start");
+            log.error("Event is not waiting start");
             throw new IllegalArgumentException("Cannot register on Event " + eventId);
         }
 
 
         var registration = eventRegistrationRepository.findRegistration(user.id(), eventId);
         if (registration.isPresent()) {
-            logger.error("User already registered");
+            log.error("User already registered");
             throw new EntityExistsException("User with id " + user.id() + " already registered");
         }
 
+        var eventForCheck = eventRepository.findById(eventId).orElseThrow();
 
-        if (eventRepository.getOccupiedPlaces(eventId) >= eventRepository.getMaxPlaces(eventId)) {
-            throw new IllegalArgumentException("Event with id " + eventId + " mest nety");
-        }
+        //if (eventForCheck.getOccupiedPlaces() >= eventForCheck.getPlaces()) {
+        //    throw new IllegalArgumentException("Event with id " + eventId + " shouldn't get for registration");
+        //}
 
 
         var eventRegistrationEntity = new EventRegistrationEntity(
@@ -93,7 +88,7 @@ public class EventRegistrationService {
     public void cancelRegistrationOnEvent(
             Long eventId
     ) {
-        logger.info("Registration cancelling");
+        log.info("Registration cancelling");
 
         var currentUser = authenticationService.getCurrentAuthenticatedUser();
 

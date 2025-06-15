@@ -105,6 +105,5 @@ WHERE e.ownerId = :ownerId
          @Param("ownerId") Long ownerId
     );
 
-
 }
 

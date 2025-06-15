@@ -19,3 +19,13 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     ports:
       - "9092:9092"    # Внутренний порт Kafka
+
+  db:
+    image: 'postgres:16'
+    container_name: event-service-db
+    environment:
+         - 'POSTGRES_DB=${DB_URL:-postgres}'
+         - 'POSTGRES_USER=${DB_USER:-postgres}'
+         - 'POSTGRES_PASSWORD=${DB_PASSWORD:-root}'
+    ports:
+         - '5432:5432'

@@ -3,16 +3,14 @@ package com.example.event_manager.events.domain;
 import com.example.event_manager.events.EventStatus;
 import com.example.event_manager.events.database.EventEntity;
 import com.example.event_manager.events.database.EventRegistrationMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class EventDomainMapper {
 
     private final EventRegistrationMapper eventRegistrationMapper;
-
-    public EventDomainMapper(EventRegistrationMapper eventRegistrationMapper) {
-        this.eventRegistrationMapper = eventRegistrationMapper;
-    }
 
     public Event toDomainFromEntity(EventEntity createdEvent) {
         return new Event(

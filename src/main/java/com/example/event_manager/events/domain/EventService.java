@@ -11,8 +11,11 @@ import com.example.event_manager.events.eventKafka.EventFieldChangeUtil;
 import com.example.event_manager.events.eventKafka.EventKafkaSender;
 import com.example.event_manager.locations.domain.LocationService;
 import com.example.event_manager.security.jwt.AuthenticationService;
+import com.example.event_manager.users.database.UserRepository;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,35 +27,27 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Objects;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class EventService {
-
-    private static Logger logger = LoggerFactory.getLogger(EventService.class);
 
     private final EventRepository eventRepository;
     private final AuthenticationService authenticationService;
     private final LocationService locationService;
     private final EventKafkaSender eventKafkaSender;
     private final EventRegistrationService eventRegistrationService;
-
-    private EventDomainMapper eventDomainMapper;
-
-    public EventService(EventRepository eventRepository, AuthenticationService authenticationService, LocationService locationService, EventKafkaSender eventKafkaSender, EventRegistrationService eventRegistrationService, EventDomainMapper eventDomainMapper) {
-        this.eventRepository = eventRepository;
-        this.authenticationService = authenticationService;
-        this.locationService = locationService;
-        this.eventKafkaSender = eventKafkaSender;
-        this.eventRegistrationService = eventRegistrationService;
-        this.eventDomainMapper = eventDomainMapper;
-    }
+    private final UserRepository userRepository;
+    private final EventDomainMapper eventDomainMapper;
 
     public Event createEvent(
             EventRequestDto eventRequestDto
     ) {
-        logger.info("Creating new event");
+        //меньше логов, в будущем если у тебя нагрузка будет 100rps как быстро засрется лог система?
+        log.debug("Creating new event");
 
         if (eventRepository.existsByName(eventRequestDto.name())) {
-            logger.error("Event with name {} already exists", eventRequestDto.name());
+            log.error("Event with name {} already exists", eventRequestDto.name());
             throw new EntityExistsException("Event with name " + eventRequestDto.name() + " already exists");
         }
 
@@ -88,7 +83,7 @@ public class EventService {
 
 
     public List<Event> getAllEvents() {
-        logger.info("Retrieving all events");
+        log.debug("Retrieving all events");
         return eventRepository.findAll()
                 .stream()
                 .map(eventDomainMapper::toDomainFromEntity)
@@ -98,7 +93,7 @@ public class EventService {
     public void deleteEventById(
             Long id
     ) {
-        logger.info("Deleting event with id {}", id);
+        log.debug("Deleting event with id {}", id);
         if (!eventRepository.existsById(id)) {
             throw new EntityNotFoundException("Event with id " + id + " not found");
         }
@@ -133,7 +128,7 @@ public class EventService {
             Long id,
             EventRequestForUpdateDto eventToUpdate
     ) {
-        logger.info("Updating event with id {}", id);
+        log.debug("Updating event with id {}", id);
 
         var currentUser = authenticationService.getCurrentAuthenticatedUser();
         String token = authenticationService.getCurrentUserJwtToken();
@@ -189,8 +184,8 @@ public class EventService {
                 )
         );
 
-        logger.info("\uD83D\uDD01 oldName: {}", oldName);
-        logger.info("\uD83C\uDD95 newName: {}", event.getName());
+        log.debug("\uD83D\uDD01 oldName: {}", oldName);
+        log.debug("\uD83C\uDD95 newName: {}", event.getName());
 
         eventKafkaSender.sendEvent(changeMessage);
 
@@ -241,7 +236,7 @@ public class EventService {
     public Event getEventById(
             Long id
     ) {
-        logger.info("Retrieving event with id {}", id);
+        log.debug("Retrieving event with id {}", id);
         var event = eventRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Event with id " + id + " not found"));
 
@@ -274,7 +269,7 @@ public class EventService {
     }
 
     public void updateStatus(Long eventId, String newStatus) {
-        logger.info("Updating event status for event {}", eventId);
+        log.debug("Updating event status for event {}", eventId);
 
         // 1. Получаем событие
         var event = getEventById(eventId);
@@ -290,7 +285,7 @@ public class EventService {
                 token = authenticationService.getCurrentUserJwtToken();
             }
         } catch (IllegalStateException e) {
-            logger.warn("No authentication context available - system initiated change");
+            log.error("No authentication context available - system initiated change");
         }
 
 
@@ -320,7 +315,7 @@ public class EventService {
     public void cancelEvent(
             Long eventId
     ) {
-        logger.info("Event cancelling");
+        log.info("Event cancelling");
 
         var currentUser = authenticationService.getCurrentAuthenticatedUser();
         var event = getEventById(eventId);
@@ -347,7 +342,7 @@ public class EventService {
     }
 
     public List<Event> getCreatedUserEvent() {
-        logger.info("Retrieving all created user events");
+        log.info("Retrieving all created user events");
 
         var currentUser = authenticationService.getCurrentAuthenticatedUser();
 
@@ -355,11 +350,4 @@ public class EventService {
                 .map(event -> eventDomainMapper.toDomainFromEntity(event))
                 .toList();
     }
-
-
-
-
-
-
-
 }

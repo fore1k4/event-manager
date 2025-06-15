@@ -5,6 +5,7 @@ import com.example.event_manager.events.domain.Event;
 import com.example.event_manager.events.domain.EventDomainMapper;
 import com.example.event_manager.events.domain.EventRegistration;
 import com.example.event_manager.events.domain.EventService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -12,12 +13,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class EventEntityMapper {
 
-
+    @Autowired
+    @Lazy
     private  EventService eventService;
 
     @Autowired
     @Lazy
     private  EventDomainMapper eventDomainMapper;
+
+    @Autowired
+    private EventRepository repository;
+    @Autowired
+    private EventRepository eventRepository;
 
 
     public Event toDomain (EventEntity event) {
@@ -52,14 +59,14 @@ public class EventEntityMapper {
                 event.maxPlaces(),
                 event.occupiedPlaces(),
                 event.registrationList().stream()
-                        .map(it ->
-                                new EventRegistrationEntity(
-                                        it.id(),
-                                        it.userId(),
-                                        eventDomainMapper.toEntityFromDomain(
-                                                eventService.getEventById(it.eventId())
-                                        )
-                        ))
+                        .map(it -> {
+                            var eventById = eventRepository.findById(it.eventId()).get();
+                            return new EventRegistrationEntity(
+                                    it.id(),
+                                    it.userId(),
+                                    eventById
+                            );
+                        })
                         .toList(),
                 event.date(),
                 event.cost(),
