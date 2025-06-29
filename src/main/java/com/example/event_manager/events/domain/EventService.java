@@ -43,7 +43,6 @@ public class EventService {
     public Event createEvent(
             EventRequestDto eventRequestDto
     ) {
-        //меньше логов, в будущем если у тебя нагрузка будет 100rps как быстро засрется лог система?
         log.debug("Creating new event");
 
         if (eventRepository.existsByName(eventRequestDto.name())) {

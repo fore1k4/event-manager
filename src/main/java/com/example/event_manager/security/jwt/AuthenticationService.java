@@ -2,6 +2,7 @@ package com.example.event_manager.security.jwt;
 
 import com.example.event_manager.users.api.SignInRequest;
 import com.example.event_manager.users.domain.User;
+import com.example.event_manager.users.domain.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,6 +17,8 @@ public class AuthenticationService {
     private AuthenticationManager authenticationManager;
     @Autowired
     private JwtTokenManager jwtTokenManager;
+    @Autowired
+    private UserService userService;
 
 
     public String authenticate(
@@ -27,8 +30,9 @@ public class AuthenticationService {
                         signInRequest.password()
                 )
         );
+        var userId = userService.findByLogin(signInRequest.login()).id();
 
-        return jwtTokenManager.createJwtToken(signInRequest.login());
+        return jwtTokenManager.createJwtToken(signInRequest.login(), userId);
     }
 
     public User getCurrentAuthenticatedUser() {

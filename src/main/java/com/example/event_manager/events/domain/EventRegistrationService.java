@@ -68,9 +68,9 @@ public class EventRegistrationService {
 
         var eventForCheck = eventRepository.findById(eventId).orElseThrow();
 
-        //if (eventForCheck.getOccupiedPlaces() >= eventForCheck.getPlaces()) {
-        //    throw new IllegalArgumentException("Event with id " + eventId + " shouldn't get for registration");
-        //}
+        if (eventForCheck.getOccupiedPlaces() >= eventForCheck.getPlaces()) {
+            throw new IllegalArgumentException("Event with id " + eventId + " shouldn't get for registration");
+        }
 
 
         var eventRegistrationEntity = new EventRegistrationEntity(
