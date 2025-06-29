@@ -17,31 +17,28 @@ public class DefaultUserInitializer {
 
     @PostConstruct
     public void initializeUsers() {
-        var hashedPassAdmin = passwordEncoder.encode("admin");
-        var admin = new UserEntity(
-                null,
-                "admin",
-                hashedPassAdmin,
-                "ADMIN"
-        );
-
-        if (userRepository.existsByLogin("admin")) {
-            throw new EntityExistsException("User already exists");
+        if (!userRepository.existsByLogin("admin")) {
+            var admin = new UserEntity(
+                    null,
+                    "admin",
+                    passwordEncoder.encode("admin"),
+                    "ADMIN"
+            );
+            userRepository.save(admin);
+        } else {
+            System.out.println("Admin already exists, skipping creation.");
         }
-        userRepository.save(admin);
 
-        var hashedPassUser = passwordEncoder.encode("user");
-
-        var user = new UserEntity(
-                null,
-                "user",
-                hashedPassUser,
-                "USER"
-        );
-        if (userRepository.existsByLogin("user")) {
-            throw new EntityExistsException("User already exists");
+        if (!userRepository.existsByLogin("user")) {
+            var user = new UserEntity(
+                    null,
+                    "user",
+                    passwordEncoder.encode("user"),
+                    "USER"
+            );
+            userRepository.save(user);
+        } else {
+            System.out.println("User already exists, skipping creation.");
         }
-        userRepository.save(user);
-
     }
 }

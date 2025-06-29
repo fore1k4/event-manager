@@ -27,13 +27,15 @@ public class JwtTokenManager {
         this.expiration = expiration;
     }
 
-    public String createJwtToken(String login ) {
+    public String createJwtToken(String login, Long userId) {
         logger.info("Creating jwt token");
        return  Jwts.builder()
                  .setSubject(login)
+                .claim("userId", userId)
                  .signWith(secretKey)
                  .setIssuedAt(new Date())
                  .setExpiration(new Date(System.currentTimeMillis() + expiration))
+
                  .compact();
     }
 

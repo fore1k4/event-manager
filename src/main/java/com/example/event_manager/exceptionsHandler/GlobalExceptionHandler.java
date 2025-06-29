@@ -40,6 +40,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ServerErrorDto> handleSomeException(
             Exception e
     ) {
+        //лучше сделать конкретную обработку ошибок + кастомные исключения
         logger.info("Handle any exception");
         var errorDto = new ServerErrorDto(
                 "Ошибка сервера",
