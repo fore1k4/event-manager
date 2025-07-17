@@ -102,7 +102,7 @@ public class EventController {
                 .body(events);
     }
 
-    @GetMapping("/search")
+    @PostMapping("/search")
     public ResponseEntity<List<EventDto>> searchEvent(
             @RequestBody SearchFilter searchFilter
     ) {

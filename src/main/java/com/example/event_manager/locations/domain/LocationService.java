@@ -1,10 +1,13 @@
 package com.example.event_manager.locations.domain;
 
+import com.example.event_manager.events.database.EventRepository;
+import com.example.event_manager.events.domain.EventService;
 import com.example.event_manager.locations.database.LocationsRepository;
 import com.example.event_manager.locations.database.LocationEntity;
 import com.example.event_manager.locations.database.LocationEntityConverter;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -13,18 +16,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class LocationService {
+
+    private final EventRepository eventRepository;
     private final LocationEntityConverter locationEntityConverter;
     private final LocationsRepository locationsRepository;
     private static final Logger logger = LoggerFactory.getLogger(LocationService.class);
 
-    public LocationService(
-            LocationEntityConverter locationEntityConverter,
-            LocationsRepository locationsRepository
-    ) {
-        this.locationEntityConverter = locationEntityConverter;
-        this.locationsRepository = locationsRepository;
-    }
 
     @Transactional
     public Location createLocation(
@@ -85,11 +84,12 @@ public class LocationService {
     ) {
         logger.info("update location process with locationId = {}", id);
 
+        var location = getLocationById(id);
+
         if (!locationsRepository.existsById(id)) {
             throw new EntityNotFoundException("location with id = %s, not found"
                     .formatted(id));
         }
-
 
         var updatedLocationEntity = new LocationEntity(
                 newLocation.id(),
@@ -102,6 +102,12 @@ public class LocationService {
         if (locationsRepository.existsByAddress(updatedLocationEntity.getAddress())) {
             throw new EntityExistsException("location with address = %s, already exists"
                     .formatted(updatedLocationEntity.getAddress()));
+        }
+
+        if (eventRepository.existsLocationById(id)) {
+            if (newLocation.capacity() < location.capacity()) {
+                throw new IllegalArgumentException("location capacity exceeds capacity");
+            }
         }
 
         updatedLocationEntity.setId(id);

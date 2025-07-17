@@ -12,7 +12,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/registration")
+@RequestMapping("/events/registrations")
 @RequiredArgsConstructor
 public class EventRegistrationController {
 
@@ -32,7 +32,7 @@ public class EventRegistrationController {
      return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/cancelling/{id}")
+    @DeleteMapping("/cancel/{id}")
     public ResponseEntity<Void> cancelRegistrationOnEvent(
           @PathVariable("id")  Long eventId
     ) {
@@ -44,7 +44,7 @@ public class EventRegistrationController {
     }
 
 
-    @GetMapping("/registrations/my")
+    @GetMapping("/my")
     public ResponseEntity<List<EventDto>> getUserRegisteredEvents(
     ) {
         log.debug("Request for getting user registration events");
