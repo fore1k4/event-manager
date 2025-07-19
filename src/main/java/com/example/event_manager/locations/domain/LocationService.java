@@ -1,7 +1,6 @@
 package com.example.event_manager.locations.domain;
 
 import com.example.event_manager.events.database.EventRepository;
-import com.example.event_manager.events.domain.EventService;
 import com.example.event_manager.locations.database.LocationsRepository;
 import com.example.event_manager.locations.database.LocationEntity;
 import com.example.event_manager.locations.database.LocationEntityConverter;

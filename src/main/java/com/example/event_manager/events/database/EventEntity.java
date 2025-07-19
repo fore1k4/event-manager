@@ -1,6 +1,5 @@
 package com.example.event_manager.events.database;
 
-import com.example.event_manager.events.EventStatus;
 import jakarta.persistence.*;
 
 import java.time.ZonedDateTime;

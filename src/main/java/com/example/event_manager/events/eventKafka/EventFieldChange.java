@@ -1,13 +1,11 @@
 package com.example.event_manager.events.eventKafka;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class EventFieldChange<T> {
     private T oldField;
     private T newField;
 
     public EventFieldChange() {
-        // нужен для Jackson и для вызовов new EventFieldChange<>()
     }
 
     public EventFieldChange(T oldField, T newField) {

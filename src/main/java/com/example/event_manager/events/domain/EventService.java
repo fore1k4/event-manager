@@ -5,8 +5,6 @@ import com.example.event_manager.events.api.EventRequestDto;
 import com.example.event_manager.events.api.EventRequestForUpdateDto;
 import com.example.event_manager.events.api.SearchFilter;
 import com.example.event_manager.events.database.*;
-import com.example.event_manager.events.eventKafka.EventChangeMessage;
-import com.example.event_manager.events.eventKafka.EventFieldChange;
 import com.example.event_manager.locations.domain.LocationService;
 import com.example.event_manager.notifications.NotificationService;
 import com.example.event_manager.security.jwt.AuthenticationService;
@@ -14,8 +12,11 @@ import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -29,7 +30,11 @@ public class EventService {
     private final LocationService locationService;
     private final EventDomainMapper eventDomainMapper;
     private final NotificationService notificationService;
+    private final ApplicationContext applicationContext;
 
+    private EventService getSelf() {
+        return applicationContext.getBean(EventService.class);
+    }
     public Event createEvent(
             EventRequestDto eventRequestDto
     ) {
@@ -87,7 +92,7 @@ public class EventService {
             throw new EntityNotFoundException("Event with id " + id + " not found");
         }
 
-        var event = getEventById(id);
+        var event = getSelf().getEventById(id);
 
         eventRepository.deleteById(id);
 
@@ -124,7 +129,6 @@ public class EventService {
 
         return updatedEvent;
     }
-
 
 
     @Transactional
@@ -166,13 +170,12 @@ public class EventService {
     public void updateStatus(Long eventId, String newStatus) {
         log.debug("Updating event status for event {}", eventId);
 
-        var event = getEventById(eventId);
-
+        var event = getSelf().getEventById(eventId);
 
 
         eventRepository.updateEventStatus(eventId, newStatus);
 
-       notificationService.updateStatus(event, newStatus);
+        notificationService.updateStatus(event, newStatus);
     }
 
     public void cancelEvent(
@@ -180,7 +183,7 @@ public class EventService {
     ) {
         log.info("Event cancelling");
 
-        var event = getEventById(eventId);
+        var event = getSelf().getEventById(eventId);
         var newStatus = EventStatus.CANCELLED.name();
         eventRepository.updateEventStatus(eventId, newStatus);
         notificationService.cancelEvent(event);

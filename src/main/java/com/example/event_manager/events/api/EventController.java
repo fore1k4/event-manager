@@ -41,7 +41,6 @@ public class EventController {
     }
 
 
-
     @GetMapping
     public ResponseEntity<List<EventDto>> getAllEvents() {
         logger.info("Request for getting all events");

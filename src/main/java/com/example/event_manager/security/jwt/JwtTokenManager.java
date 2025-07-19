@@ -20,8 +20,8 @@ public class JwtTokenManager {
     private final Integer expiration;
 
     public JwtTokenManager(
-            @Value("${jwt.secret-key}")String keyString,
-            @Value("${jwt.lifetime}")Integer expiration
+            @Value("${jwt.secret-key}") String keyString,
+            @Value("${jwt.lifetime}") Integer expiration
     ) {
         this.secretKey = Keys.hmacShaKeyFor(keyString.getBytes());
         this.expiration = expiration;
@@ -29,14 +29,14 @@ public class JwtTokenManager {
 
     public String createJwtToken(String login, Long userId) {
         logger.info("Creating jwt token");
-       return  Jwts.builder()
-                 .setSubject(login)
+        return Jwts.builder()
+                .setSubject(login)
                 .claim("userId", userId)
-                 .signWith(secretKey)
-                 .setIssuedAt(new Date())
-                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(secretKey)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
 
-                 .compact();
+                .compact();
     }
 
     public String getLoginFromJwtToken(String token) {
