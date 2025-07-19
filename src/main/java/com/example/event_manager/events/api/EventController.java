@@ -41,7 +41,6 @@ public class EventController {
     }
 
 
-
     @GetMapping
     public ResponseEntity<List<EventDto>> getAllEvents() {
         logger.info("Request for getting all events");
@@ -102,7 +101,7 @@ public class EventController {
                 .body(events);
     }
 
-    @GetMapping("/search")
+    @PostMapping("/search")
     public ResponseEntity<List<EventDto>> searchEvent(
             @RequestBody SearchFilter searchFilter
     ) {

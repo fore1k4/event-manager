@@ -98,12 +98,19 @@ public interface EventRepository extends JpaRepository<EventEntity, Long> {
     );
 
     @Query("""
-SELECT e FROM EventEntity e 
-WHERE e.ownerId = :ownerId
-""")
+            SELECT e FROM EventEntity e 
+            WHERE e.ownerId = :ownerId
+            """)
     List<EventEntity> getCreatedUserEvents(
-         @Param("ownerId") Long ownerId
+            @Param("ownerId") Long ownerId
     );
+
+    @Query("""
+                SELECT COUNT(e) > 0 
+                FROM EventEntity e 
+                WHERE e.locationId = :locationId
+            """)
+    boolean existsLocationById(@Param("locationId") Long locationId);
 
 }
 

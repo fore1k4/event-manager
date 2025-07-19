@@ -16,16 +16,6 @@ public class EventRegistrationMapper {
     @Autowired
     private EventEntityMapper eventEntityMapper;
 
-    public EventRegistration toDomain(
-            EventRegistrationEntity eventRegistrationEntity
-    ) {
-        return new EventRegistration(
-                eventRegistrationEntity.getId(),
-                eventRegistrationEntity.getUserId(),
-                eventRegistrationEntity.getEvent().getId()
-        );
-    }
-
     public EventRegistrationEntity toEntity(EventRegistration eventRegistration) {
         var event = eventService.getEventById(eventRegistration.eventId());
         return new EventRegistrationEntity(

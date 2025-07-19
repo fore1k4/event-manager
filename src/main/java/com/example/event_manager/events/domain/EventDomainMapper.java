@@ -9,9 +9,6 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class EventDomainMapper {
-
-    private final EventRegistrationMapper eventRegistrationMapper;
-
     public Event toDomainFromEntity(EventEntity createdEvent) {
         return new Event(
                 createdEvent.getId(),
@@ -33,23 +30,4 @@ public class EventDomainMapper {
                 EventStatus.valueOf(createdEvent.getStatus())
         );
     }
-
-    public EventEntity toEntityFromDomain(Event event) {
-        return new EventEntity(
-                event.id(),
-                event.name(),
-                event.ownerId(),
-                event.maxPlaces(),
-                event.occupiedPlaces(),
-                event.registrationList().stream()
-                        .map(eventRegistrationMapper::toEntity)
-                        .toList(),
-                event.date(),
-                event.cost(),
-                event.duration(),
-                event.locationId(),
-                event.status().name()
-        );
-    }
-
 }

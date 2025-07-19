@@ -14,44 +14,9 @@ import org.springframework.stereotype.Component;
 public class EventEntityMapper {
 
     @Autowired
-    @Lazy
-    private  EventService eventService;
-
-    @Autowired
-    @Lazy
-    private  EventDomainMapper eventDomainMapper;
-
-    @Autowired
-    private EventRepository repository;
-    @Autowired
     private EventRepository eventRepository;
 
-
-    public Event toDomain (EventEntity event) {
-        return new Event(
-               event.getId(),
-                event.getName(),
-                event.getOwnerId(),
-                event.getPlaces(),
-                event.getOccupiedPlaces(),
-                event.getRegistrationList().stream()
-                        .map(it ->
-                                new EventRegistration(
-                                        it.getId(),
-                                        it.getUserId(),
-                                        event.getId())
-                                        )
-                        .toList(),
-                event.getDate(),
-                event.getCost(),
-                event.getDuration(),
-                event.getLocationId(),
-                EventStatus.valueOf(event.getStatus())
-        );
-
-    }
-
-    public EventEntity toEntity (Event event) {
+    public EventEntity toEntity(Event event) {
         return new EventEntity(
                 event.id(),
                 event.name(),

@@ -41,7 +41,6 @@ public class EventStatusScheduler {
                 newStatus = EventStatus.FINISHED;
             }
 
-            // 💡 Проверяем — если статус уже такой, нахуй чё-то делать
             if (!event.status().equals(newStatus)) {
                 eventService.updateStatus(event.id(), newStatus.name());
             }

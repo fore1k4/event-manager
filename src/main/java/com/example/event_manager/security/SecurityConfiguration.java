@@ -69,7 +69,7 @@ public class SecurityConfiguration {
                                 .requestMatchers(HttpMethod.PUT, "/registrations/my").hasAnyAuthority("USER")
 
                                 .requestMatchers(HttpMethod.PUT, "/registration/**").hasAnyAuthority("ADMIN", "USER")
-                                .requestMatchers(HttpMethod.PUT, "/registration/cancelling/**").hasAnyAuthority( "USER")
+                                .requestMatchers(HttpMethod.PUT, "/registration/cancelling/**").hasAnyAuthority("USER")
 
                                 .requestMatchers(HttpMethod.POST, "/users").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/users/auth").permitAll()
