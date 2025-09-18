@@ -3,17 +3,12 @@ package com.example.event_manager.events.domain;
 import com.example.event_manager.events.EventStatus;
 import com.example.event_manager.events.database.EventEntity;
 import com.example.event_manager.events.database.EventRegistrationMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class EventDomainMapper {
-
-    private final EventRegistrationMapper eventRegistrationMapper;
-
-    public EventDomainMapper(EventRegistrationMapper eventRegistrationMapper) {
-        this.eventRegistrationMapper = eventRegistrationMapper;
-    }
-
     public Event toDomainFromEntity(EventEntity createdEvent) {
         return new Event(
                 createdEvent.getId(),
@@ -35,23 +30,4 @@ public class EventDomainMapper {
                 EventStatus.valueOf(createdEvent.getStatus())
         );
     }
-
-    public EventEntity toEntityFromDomain(Event event) {
-        return new EventEntity(
-                event.id(),
-                event.name(),
-                event.ownerId(),
-                event.maxPlaces(),
-                event.occupiedPlaces(),
-                event.registrationList().stream()
-                        .map(eventRegistrationMapper::toEntity)
-                        .toList(),
-                event.date(),
-                event.cost(),
-                event.duration(),
-                event.locationId(),
-                event.status().name()
-        );
-    }
-
 }

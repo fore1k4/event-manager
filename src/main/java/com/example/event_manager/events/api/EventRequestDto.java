@@ -21,7 +21,6 @@ public record EventRequestDto(
         @PositiveOrZero(message = "Cost must be non-negative")
         Long cost,
 
-
         // Для тестирования статуса событий убираю ограничения
         @Min(value = 30, message = "Duration must be greater than 30")
         Long duration,
